@@ -11,15 +11,21 @@ load_dotenv()
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 KAFKA_TOPIC_TRANSACTIONS = os.getenv("KAFKA_TOPIC_TRANSACTIONS", "transactions")
 
-# Productor de Kafka usando la librería kafka-python
-# - value_serializer: convierte el mensaje a bytes antes de enviar
-# - key_serializer: serializa la clave del mensaje
-producer = KafkaProducer(
-    bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-    value_serializer=lambda v: v.encode("utf-8"),
-    key_serializer=lambda k: k.encode("utf-8") if k else None,
-)
+producer = None
 
+def get_producer():
+    global producer
+    if producer is None:
+
+        # Productor de Kafka usando la librería kafka-python
+        # - value_serializer: convierte el mensaje a bytes antes de enviar
+        # - key_serializer: serializa la clave del mensaje
+        producer = KafkaProducer(
+        bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+        value_serializer=lambda v: v.encode("utf-8"),
+        key_serializer=lambda k: k.encode("utf-8") if k else None,
+    )
+    return producer
 
 def send_transaction(transaction: Transaction) -> None:
     """
@@ -31,6 +37,8 @@ def send_transaction(transaction: Transaction) -> None:
         3. Asegura que se envíe inmediatamente -> producer.flush()
     """
 
+    p = get_producer()
+
     message = transaction.model_dump_json()
-    producer.send(KAFKA_TOPIC_TRANSACTIONS, key=transaction.transaction_id, value=message)
-    producer.flush()
+    p.send(KAFKA_TOPIC_TRANSACTIONS, key=transaction.transaction_id, value=message)
+    p.flush()
