@@ -8,7 +8,7 @@ from producer.models import Transaction, VALID_CURRENCIES
 # Alias del Literal definido en models.py para el type checker
 TransactionType = Literal["PURCHASE", "WITHDRAWAL", "TRANSFER"]
 
-# Instancia global reutilizable — Faker es costoso de inicializar repetidamente
+# Instancia global reutilizable de Faker para generar datos sintéticos
 fake = Faker()
 
 
@@ -19,7 +19,7 @@ def generate_transaction() -> Transaction:
     merchant_id = f"MERCH{random.randint(1000, 9999)}"
     amount = round(random.uniform(1, 10000), 2)
 
-    # VALID_CURRENCIES viene de pycountry vía models.py — cubre todos los códigos ISO 4217
+    # VALID_CURRENCIES viene de pycountry vía models.py, cubre todos los códigos ISO 4217
     currency = random.choice(list(VALID_CURRENCIES))
 
     # cast() solo informa al type checker; random.choice devuelve str en runtime
