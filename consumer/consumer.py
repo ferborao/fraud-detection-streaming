@@ -34,10 +34,12 @@ df_parsed = df.select(
 ).select("data.*")
 
 # Agrupacion de transacciones por ventana de 5 minutos y card_id, contando el numero de transacciones
-df_fraud = df_parsed.groupBy(
-    window(col("timestamp"), "5 minutes"),
-    col("card_id")
-).agg(count("*").alias("tx_count")).filter(col("tx_count") > 3)
+df_fraud = df_parsed \
+    .withWatermark("timestamp", "10 minutes") \
+    .groupBy(
+        window(col("timestamp"), "5 minutes"),
+        col("card_id")
+    ).agg(count("*").alias("tx_count")).filter(col("tx_count") > 3)
 
 # Funcion para escribir los resultados en Redis, donde se almacena el card_id como clave y el numero de transacciones como valor
 def write_to_redis(batch_df, batch_id):
@@ -51,5 +53,6 @@ def write_to_redis(batch_df, batch_id):
 
 df_fraud.writeStream \
     .foreachBatch(write_to_redis) \
+    .outputMode("update") \
     .start() \
     .awaitTermination()
