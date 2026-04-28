@@ -34,3 +34,8 @@ services:
       KAFKA_TOPIC_TRANSACTIONS: transactions
     depends_on:
       - kafka
+  redis:
+    image: redis:7.0.11
+    container_name: redis
+    ports:
+      - "6379:6379"
