@@ -39,3 +39,16 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+  consumer:
+    build:
+      context: .
+      dockerfile: consumer/dockerfile
+    container_name: consumer
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC_TRANSACTIONS: transactions
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - kafka
+      - redis 

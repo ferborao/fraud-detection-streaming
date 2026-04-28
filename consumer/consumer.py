@@ -39,6 +39,7 @@ df_fraud = df_parsed.groupBy(
     col("card_id")
 ).agg(count("*").alias("tx_count")).filter(col("tx_count") > 3)
 
+# Funcion para escribir los resultados en Redis, donde se almacena el card_id como clave y el numero de transacciones como valor
 def write_to_redis(batch_df, batch_id):
 
     r = redis.Redis(host='redis', port=6379, db=0)
