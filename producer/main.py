@@ -15,3 +15,12 @@ def get_transaction() -> Transaction:
     # Envía la transacción al topic de Kafka
     send_transaction(transaction)
     return transaction
+
+@app.post("/simulate-fraud/{card_id}")
+def simulate_fraud(card_id: str):
+    # Genera 5 transacciones con el mismo card_id
+    for _ in range(5):
+        transaction = generate_transaction()
+        transaction = transaction.model_copy(update={"card_id": card_id})
+        send_transaction(transaction)
+    return {"message": f"5 transacciones enviadas para {card_id}"}
