@@ -2,11 +2,12 @@ import streamlit as st
 import time
 import redis
 import os
+from typing import cast, List
 
 st.title("Dashboard de Transacciones Fraudulentas")
 
 r = redis.Redis(host=os.getenv('REDIS_HOST', 'localhost'), port=6379, db=0, decode_responses=True)
-keys = r.keys("*")
+keys = cast(List[str], r.keys("*"))
 
 st.write("Claves en Redis:")
 

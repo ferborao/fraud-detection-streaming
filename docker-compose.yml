@@ -8,6 +8,11 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
       ZOOKEEPER_SYNC_LIMIT: 2
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   kafka:
     image: confluentinc/cp-kafka:7.4.0
     container_name: kafka
@@ -20,8 +25,35 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
     depends_on:
-      - zookeeper 
+      zookeeper: 
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+  kafka-init:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: >
+      bash -c "kafka-topics --create --topic transactions
+      --bootstrap-server kafka:29092
+      --partitions 1 --replication-factor 1 --if-not-exists"
+    restart: "no"
+  redis:
+    image: redis:7.4
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   fastapi:
     build:
       context: .
@@ -33,12 +65,8 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_TOPIC_TRANSACTIONS: transactions
     depends_on:
-      - kafka
-  redis:
-    image: redis:7.4
-    container_name: redis
-    ports:
-      - "6379:6379"
+      kafka:
+        condition: service_healthy
   consumer:
     build:
       context: .
@@ -49,5 +77,21 @@ services:
       KAFKA_TOPIC_TRANSACTIONS: transactions
       REDIS_HOST: redis
     depends_on:
-      - kafka
-      - redis 
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard/dockerfile
+    container_name: dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      REDIS_HOST: redis
+    depends_on:
+      redis:
+        condition: service_healthy
