@@ -9,3 +9,4 @@ pyspark>=3.0.0
 delta-spark>=2.0.0
 redis>=4.0.0
 streamlit>=1.0.0
+asyncio>=3.0.0
