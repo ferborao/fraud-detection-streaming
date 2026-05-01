@@ -4,6 +4,7 @@ from producer.producer import generate_transaction
 from messaging.kafka_producer import send_transaction
 from fastapi import BackgroundTasks
 import asyncio
+import random
 
 # El producer actúa como API HTTP que otros servicios pueden llamar
 # para obtener transacciones sintéticas
@@ -28,8 +29,12 @@ def simulate_fraud(card_id: str):
     return {"message": f"5 transacciones enviadas para {card_id}"}
 
 async def generate_continuous(n: int, delay: float):
-    for _ in range(n):
+    fraud_card = f"CARD{random.randint(100000, 999999)}"
+    for i in range(n):
         transaction = generate_transaction()
+        # Cada 5 transacciones, usa la misma tarjeta para simular fraude
+        if i % 5 == 0:
+            transaction = transaction.model_copy(update={"card_id": fraud_card})
         send_transaction(transaction)
         await asyncio.sleep(delay)
 
